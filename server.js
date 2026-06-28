@@ -46,10 +46,10 @@ console.log(`   👉 Client ID available: ${!!process.env.GITHUB_CLIENT_ID}`);
 console.log(`   👉 Client Secret available: ${!!process.env.GITHUB_CLIENT_SECRET}`);
 
 passport.use(new GitHubStrategy({
-    clientID: process.env.GITHUB_CLIENT_ID || 'dummy_id',
-    clientSecret: process.env.GITHUB_CLIENT_SECRET || 'dummy_secret',
+    clientID: process.env.GITHUB_CLIENT_ID,
+    clientSecret: process.env.GITHUB_CLIENT_SECRET,
     callbackURL: process.env.NODE_ENV === 'production'
-        ? "https://your-render-app-name.onrender.com/auth/github/callback"
+        ? "https://cse341-bookstore.onrender.com/auth/github/callback"
         : "http://localhost:4000/auth/github/callback"
 }, (accessToken, refreshToken, profile, done) => {
     console.log("👋 GitHub verification callback triggered! Profile received:", profile.username);
