@@ -1,0 +1,102 @@
+openapi: 3.0.0
+info:
+  title: Bookstore REST API
+  version: 1.0.0
+  description: A professional backend Node.js API to manage a bookstore inventory.
+servers:
+  - url: http://localhost:4000
+    description: Development Server
+
+paths:
+  /api/books:
+    post:
+      summary: Add a new book to the inventory
+      description: Creates a new book document inside the database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - author
+                - isbn
+                - price
+              properties:
+                title: { type: string }
+                author: { type: string }
+                isbn: { type: string }
+                price: { type: number }
+                genres: { type: array, items: { type: string } }
+                stockQuantity: { type: number }
+                description: { type: string }
+                isBestseller: { type: boolean }
+      responses:
+        201:
+          description: Book created successfully
+        400:
+          description: Invalid input or database validation failure
+
+    get:
+      summary: Retrieve all books
+      description: Returns a comprehensive list of all books stored in the inventory database.
+      responses:
+        200:
+          description: A JSON array of book objects
+        500:
+          description: Server error
+
+  /api/books/{id}:
+    put:
+      summary: Update an existing book by ID
+      description: Updates specific fields of a book document inside the database.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The unique MongoDB hex string ID of the book
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                author: { type: string }
+                isbn: { type: string }
+                price: { type: number }
+                genres: { type: array, items: { type: string } }
+                stockQuantity: { type: number }
+                description: { type: string }
+                isBestseller: { type: boolean }
+      responses:
+        200:
+          description: Book updated successfully
+        400:
+          description: Invalid data or validation failure
+        444:
+          description: Book ID not found
+        500:
+          description: Server error
+
+    delete:
+      summary: Delete a book by ID
+      description: Permanently removes a book document from the database inventory.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The unique MongoDB hex string ID of the book
+          schema:
+            type: string
+      responses:
+        200:
+          description: Book deleted successfully
+        444:
+          description: Book ID not found
+        500:
+          description: Server error

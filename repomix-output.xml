@@ -1,0 +1,433 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+controllers/
+  books.js
+models/
+  Book.js
+routes/
+  auth.js
+  books.js
+  index.js
+package.json
+server.js
+swagger.yaml
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="controllers/books.js">
+const Book = require('../models/Book');
+const mongoose = require('mongoose');
+
+// GET all books
+const getAllBooks = async (req, res) => {
+    try {
+        const books = await Book.find();
+        res.status(200).json(books);
+    } catch (error) {
+        res.status(500).json({ status: 500, message: "Internal Server Error", error: error.message });
+    }
+};
+
+// POST a new book
+const createBook = async (req, res) => {
+    try {
+        const newBook = await Book.create(req.body);
+        res.status(201).json(newBook);
+    } catch (error) {
+        res.status(400).json({ status: 400, message: "Validation Failed", error: error.message });
+    }
+};
+
+// PUT update a book
+const updateBook = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ status: 400, message: "Invalid ID format specified." });
+        }
+        const updatedBook = await Book.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+        if (!updatedBook) {
+            return res.status(404).json({ status: 404, message: "Target book entry not found." });
+        }
+        res.status(200).json(updatedBook);
+    } catch (error) {
+        res.status(400).json({ status: 400, message: "Failed to update record", error: error.message });
+    }
+};
+
+// DELETE a book
+const deleteBook = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ status: 400, message: "Invalid ID format specified." });
+        }
+        const deletedBook = await Book.findByIdAndDelete(id);
+        if (!deletedBook) {
+            return res.status(404).json({ status: 404, message: "Target book entry not found." });
+        }
+        res.status(200).json({ status: 200, message: "Book record successfully deleted from inventory." });
+    } catch (error) {
+        res.status(500).json({ status: 500, message: "Server error during deletion", error: error.message });
+    }
+};
+
+module.exports = {
+    getAllBooks,
+    createBook,
+    updateBook,
+    deleteBook
+};
+</file>
+
+<file path="models/Book.js">
+const mongoose = require('mongoose');
+
+const bookSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    author: { type: String, required: true },
+    isbn: { type: String, required: true, unique: true },
+    price: { type: Number, required: true },
+    publishDate: { type: Date },
+    genres: [{ type: String }],
+    stockQuantity: { type: Number, default: 0 },
+    description: { type: String },
+    isBestseller: { type: Boolean, default: false }
+}, {
+    timestamps: true
+});
+
+module.exports = mongoose.model('Book', bookSchema);
+</file>
+
+<file path="routes/auth.js">
+const express = require('express');
+const router = express.Router();
+const passport = require('passport');
+
+router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
+
+router.get('/github/callback',
+    passport.authenticate('github', { failureRedirect: '/' }),
+    (req, res) => {
+        res.redirect('/api-docs');
+    }
+);
+
+router.get('/logout', (req, res, next) => {
+    req.logout((err) => {
+        if (err) return next(err);
+        res.status(200).json({ message: "Successfully logged out." });
+    });
+});
+
+module.exports = router;
+</file>
+
+<file path="routes/books.js">
+const express = require('express');
+const router = express.Router();
+const booksController = require('../controllers/books');
+
+// Simple local middleware to protect endpoints
+const ensureAuthenticated = (req, res, next) => {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.status(401).json({ status: 401, message: "Unauthorized access: Please log in via OAuth first." });
+};
+
+// Map routes directly to controller functions
+router.get('/', booksController.getAllBooks);
+router.post('/', ensureAuthenticated, booksController.createBook);
+router.put('/:id', ensureAuthenticated, booksController.updateBook);
+router.delete('/:id', ensureAuthenticated, booksController.deleteBook);
+
+module.exports = router;
+</file>
+
+<file path="routes/index.js">
+const express = require('express');
+const router = express.Router();
+
+router.use('/auth', require('./auth'));
+router.use('/api/books', require('./books'));
+
+router.get('/', (req, res) => {
+    res.send('Bookstore API is active. <a href="/auth/github">Login with GitHub</a> to unlock endpoints.');
+});
+
+module.exports = router;
+</file>
+
+<file path="package.json">
+{
+  "name": "cse341_project2_sethmcnabb",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "mongoose": "^9.7.2",
+    "passport": "^0.7.0",
+    "passport-github2": "^0.1.12",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
+</file>
+
+<file path="server.js">
+require('dotenv').config();
+console.log("🔍 [1/6] dotenv configuration loaded.");
+
+const express = require('express');
+const mongoose = require('mongoose');
+const session = require('express-session');
+const passport = require('passport');
+const GitHubStrategy = require('passport-github2').Strategy;
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
+console.log("🔍 [2/6] Core modules successfully imported.");
+
+const app = express();
+const PORT = process.env.PORT || 4000;
+
+app.use(express.json());
+
+// Request Logger Middleware
+app.use((req, res, next) => {
+    console.log(`🌐 [INCOMING REQUEST] ${req.method} ${req.url}`);
+    next();
+});
+
+console.log("🔍 [3/6] Session & Passport config initializing...");
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'fallback_secret',
+    resave: false,
+    saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser((user, done) => {
+    console.log("💾 Serializing user session:", user.id || user);
+    done(null, user);
+});
+
+passport.deserializeUser((obj, done) => {
+    console.log("🔓 Deserializing user session context.");
+    done(null, obj);
+});
+
+console.log("🔍 [4/6] Configuring GitHub OAuth Strategy...");
+console.log(`   👉 Client ID available: ${!!process.env.GITHUB_CLIENT_ID}`);
+console.log(`   👉 Client Secret available: ${!!process.env.GITHUB_CLIENT_SECRET}`);
+
+passport.use(new GitHubStrategy({
+    clientID: process.env.GITHUB_CLIENT_ID || 'dummy_id',
+    clientSecret: process.env.GITHUB_CLIENT_SECRET || 'dummy_secret',
+    callbackURL: process.env.NODE_ENV === 'production'
+        ? "https://your-render-app-name.onrender.com/auth/github/callback"
+        : "http://localhost:4000/auth/github/callback"
+}, (accessToken, refreshToken, profile, done) => {
+    console.log("👋 GitHub verification callback triggered! Profile received:", profile.username);
+    return done(null, profile);
+}));
+
+console.log("🔍 [5/6] Initializing Swagger docs generation...");
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: { title: 'Bookstore REST API', version: '1.0.0' }
+    },
+    apis: ['./swagger.yaml'],
+};
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+console.log("   👉 Swagger route configured at /api-docs");
+
+// Link to the master MVC router
+console.log("🔍 [6/6] Binding application routing layer...");
+app.use('/', require('./routes'));
+
+// Global Express Error Catch
+app.use((err, req, res, next) => {
+    console.error("💥 [EXPRESS CRITICAL ERROR] Caught inside middleware chain:", err);
+    res.status(500).json({ error: "Internal middleware crash." });
+});
+
+app.listen(PORT, () => {
+    console.log(`🚀 Server listening on http://localhost:${PORT}`);
+});
+
+const dbURI = process.env.MONGODB_URI || process.env.MONGO_URI;
+console.log("🔌 Attempting connection to MongoDB Atlas cluster...");
+
+mongoose.connect(dbURI)
+    .then(() => console.log('✅ SUCCESS: Connected to MongoDB Atlas!'))
+    .catch((err) => console.error('❌ ERROR: MongoDB connection failure:', err));
+</file>
+
+<file path="swagger.yaml">
+openapi: 3.0.0
+info:
+  title: Bookstore REST API
+  version: 1.0.0
+  description: A professional backend Node.js API to manage a bookstore inventory.
+servers:
+  - url: http://localhost:4000
+    description: Development Server
+
+paths:
+  /api/books:
+    post:
+      summary: Add a new book to the inventory
+      description: Creates a new book document inside the database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - author
+                - isbn
+                - price
+              properties:
+                title: { type: string }
+                author: { type: string }
+                isbn: { type: string }
+                price: { type: number }
+                genres: { type: array, items: { type: string } }
+                stockQuantity: { type: number }
+                description: { type: string }
+                isBestseller: { type: boolean }
+      responses:
+        201:
+          description: Book created successfully
+        400:
+          description: Invalid input or database validation failure
+
+    get:
+      summary: Retrieve all books
+      description: Returns a comprehensive list of all books stored in the inventory database.
+      responses:
+        200:
+          description: A JSON array of book objects
+        500:
+          description: Server error
+
+  /api/books/{id}:
+    put:
+      summary: Update an existing book by ID
+      description: Updates specific fields of a book document inside the database.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The unique MongoDB hex string ID of the book
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                author: { type: string }
+                isbn: { type: string }
+                price: { type: number }
+                genres: { type: array, items: { type: string } }
+                stockQuantity: { type: number }
+                description: { type: string }
+                isBestseller: { type: boolean }
+      responses:
+        200:
+          description: Book updated successfully
+        400:
+          description: Invalid data or validation failure
+        444:
+          description: Book ID not found
+        500:
+          description: Server error
+
+    delete:
+      summary: Delete a book by ID
+      description: Permanently removes a book document from the database inventory.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The unique MongoDB hex string ID of the book
+          schema:
+            type: string
+      responses:
+        200:
+          description: Book deleted successfully
+        444:
+          description: Book ID not found
+        500:
+          description: Server error
+</file>
+
+</files>
