@@ -100,3 +100,19 @@ paths:
           description: Book ID not found
         500:
           description: Server error
+
+/auth/github:
+  get:
+    summary: Trigger GitHub OAuth Login
+    description: Redirects the client application to GitHub to authorize access.
+    responses:
+      302:
+        description: Redirecting to external GitHub login portal...
+
+/auth/logout:
+  get:
+    summary: Log out current session
+    description: Destroys the user session buffer and flushes cookies.
+    responses:
+      200:
+        description: User successfully logged out of inventory dashboard.
